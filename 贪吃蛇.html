@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>贪吃蛇网页版</title>
+    <style>
+      /* 
+      页面初始化样式设置
+     */
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      #main {
+        margin: 10px;
+      }
+      .btn {
+        width: 100px;
+        height: 40px;
+      }
+
+      .gtitle {
+        font-size: 25px;
+        font-weight: bold;
+      }
+      #guan {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <!--页面结构-->
+    <div id="main">
+      <h1>贪吃蛇</h1>
+      <input class="btn" id="begin" type="button" value="Start Game" />
+      <input class="btn" id="pause" type="button" value="Stop Game" />
+      <span class="gtitle">第<span id="guan">一</span>关</span>
+    </div>
+    <script>
+      var main = document.getElementById("main")
+      var showCanvas = true //是否开启画布格子
+      /*
+        地图构造函数
+        atom 原子的大小宽和高是一样的 10
+        xnum 横向原子数量
+        ynum 纵向原子数量
+       */
+      function Map(atom, xnum, ynum) {
+        this.atom = atom
+        this.xnum = xnum
+        this.ynum = ynum
+
+        this.canvas = null
+        //创建画布的方法
+        this.create = function () {
+          this.canvas = document.createElement("div")
+          this.canvas.style.cssText =
+            "position:relative;top:40px;border:1px solid black;background:gray;"
+          this.canvas.style.width = this.atom * this.xnum + "px"
+          this.canvas.style.height = this.atom * this.ynum + "px"
+          main.appendChild(this.canvas)
+
+          if (showCanvas) {
+            for (var y = 0; y < ynum; y++) {
+              for (var x = 0; x < xnum; x++) {
+                var a = document.createElement("div")
+                a.style.cssText = "border:1px solid yellow"
+                a.style.height = this.atom + "px"
+                a.style.width = this.atom + "px"
+                this.canvas.appendChild(a)
+                a.style.position = "absolute"
+                a.style.left = x * this.atom + "px"
+                a.style.top = y * this.atom + "px"
+              }
+            }
+          }
+        }
+      }
+      /*
+        食物构造函数
+        map 地图对象
+       */
+      function Food(map) {
+        this.width = map.atom
+        this.height = map.atom
+        this.bgcolor = "green"
+        this.x = Math.floor(Math.random() * map.xnum)
+        this.y = Math.floor(Math.random() * map.ynum)
+
+        this.flag = document.createElement("div")
+        this.flag.style.width = this.width + "px"
+        this.flag.style.height = this.height + "px"
+
+        this.flag.style.backgroundColor = this.bgcolor
+        this.flag.style.border = "1px solid green"
+        this.flag.style.borderRadius = "50%"
+        this.flag.style.position = "absolute"
+        this.flag.style.left = this.x * this.width + "px"
+        this.flag.style.top = this.y * this.height + "px"
+
+        map.canvas.appendChild(this.flag)
+      }
+      /*
+        蛇构造函数
+       */
+      function Snake(map) {
+        //设置蛇每节的宽和高
+        this.width = map.atom
+        this.height = map.atom
+        //声明蛇默认走的方向
+        this.direction = "right"
+        //蛇身
+        this.body = [
+          { x: 2, y: 0 }, //头
+          { x: 1, y: 0 }, //身体
+          { x: 0, y: 0 }, //尾
+        ]
+        //画出蛇
+        this.display = function () {
+          for (var i = 0; i < this.body.length; i++) {
+            if (this.body[i].x != null) {
+              var s = document.createElement("div")
+              //将节点保存到一个状态变量中，方便后面删除使用
+              this.body[i].flag = s
+              //设置蛇的样式
+              s.style.width = this.width + "px"
+              s.style.height = this.height + "px"
+              s.style.backgroundColor = "white"
+              s.style.border = "1px solid black"
+              //s.tyle.borderRadius = '50%'
+              //设置蛇的位置
+              s.style.position = "absolute"
+              s.style.left = this.body[i].x * this.width + "px"
+              s.style.top = this.body[i].y * this.height + "px"
+              map.canvas.appendChild(s)
+            }
+          }
+        }
+        //让蛇运动
+        this.run = function () {
+          /*
+            首先让蛇的三个节点运动：让后面的节点到前面节点位置，从后往前赋值
+           */
+          for (var i = this.body.length - 1; i > 0; i--) {
+            this.body[i].x = this.body[i - 1].x
+            this.body[i].y = this.body[i - 1].y
+          }
+          //判断方向 默认right
+          switch (this.direction) {
+            case "left":
+              this.body[0].x -= 1
+              break
+            case "right":
+              this.body[0].x += 1
+              break
+            case "up":
+              this.body[0].y -= 1
+              break
+            case "down":
+              this.body[0].y += 1
+              break
+          }
+          //判断蛇头和食物的坐标
+          if (this.body[0].x == food.x && this.body[0].y == food.y) {
+            //蛇身加一节
+            this.body.push({ x: null, y: null, flag: null })
+            //判断设置级别
+            if (this.body.length > L.slength) {
+              L.set()
+            }
+            //删除食物 新建食物
+            map.canvas.removeChild(food.flag)
+            food = new Food(map)
+          }
+          //判断是否出界
+          if (
+            this.body[0].x < 0 ||
+            this.body[0].y < 0 ||
+            this.body[0].x > map.xnum - 1 ||
+            this.body[0].y > map.ynum - 1
+          ) {
+            clearInterval(timer) //清除定时器
+            //重写开始游戏
+            restart(map, this)
+
+            return false
+          }
+          //判断是否撞到自己
+          for (var i = 4; i < this.body.length; i++) {
+            if (
+              this.body[0].x == this.body[i].x &&
+              this.body[0].y == this.body[i].y
+            ) {
+              clearInterval(timer) //清除定时器
+              //重写开始游戏
+              restart(map, this)
+
+              return false
+            }
+          }
+
+          for (var i = 0; i < this.body.length; i++) {
+            if (this.body[i].flag != null) {
+              //当吃到食物时，flag是null，且不能删除
+              map.canvas.removeChild(this.body[i].flag)
+            }
+          }
+          this.display()
+        }
+      }
+
+      //重新开始游戏
+      function restart(map, snake) {
+        for (var i = 0; i < snake.body.length; i++) {
+          map.canvas.removeChild(snake.body[i].flag)
+        }
+        snake.body = [
+          { x: 2, y: 0 }, //头
+          { x: 1, y: 0 }, //身体
+          { x: 0, y: 0 }, //尾
+        ]
+        snake.direction = "right"
+        snake.display()
+        map.canvas.removeChild(food.flag)
+        food = new Food(map)
+      }
+      //设置难度
+      function Level() {
+        this.num = 1 //第几关
+        this.speed = 300 //每升一关速度加快
+        this.slength = 10 //通过条件
+
+        this.set = function () {
+          this.num++
+          if (this.speed <= 150) {
+            this.speed = 150
+          } else {
+            this.speed -= 30
+          }
+          this.slength += 3
+          this.display()
+          start()
+        }
+
+        this.display = function () {
+          document.getElementById("guan").innerHTML = this.num
+        }
+      }
+
+      var L = new Level()
+      L.display()
+      var map = new Map(20, 30, 30)
+      map.create()
+      var food = new Food(map)
+      var snake = new Snake(map)
+      snake.display()
+      window.onkeydown = function (ev) {
+        var ev = event || window.event
+        //console.log(ev.keyCode)
+        switch (ev.keyCode) {
+          case 38:
+            if (snake.direction != "down") {
+              snake.direction = "up"
+            }
+            break
+          case 40:
+            if (snake.direction != "up") {
+              snake.direction = "down"
+            }
+            break
+          case 37:
+            if (snake.direction != "right") {
+              snake.direction = "left"
+            }
+            break
+          case 39:
+            if (snake.direction != "left") {
+              snake.direction = "right"
+            }
+            break
+        }
+      }
+
+      var timer //声明定时器，变量可提升
+      function start() {
+        clearInterval(timer) //每次开启定时器前先清楚定时器
+        timer = setInterval(function () {
+          snake.run()
+        }, L.speed)
+      }
+      //开始键按下时的定时器
+      document.getElementById("begin").onclick = function () {
+        start()
+      }
+      //暂停键按下时的定时器
+      document.getElementById("pause").onclick = function () {
+        clearInterval(timer)
+      }
+    </script>
+  </body>
+</html>
